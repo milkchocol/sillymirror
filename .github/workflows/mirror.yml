@@ -1,0 +1,33 @@
+name: Weekly Website Mirror
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Every Sunday at midnight UTC
+  workflow_dispatch:     # Allow manual runs
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Clear old files (except .git and README)
+        run: |
+          shopt -s extglob
+          rm -rf !(.git|README.md|.github)
+
+      - name: Mirror website
+        run: |
+          wget --mirror --convert-links --adjust-extension --page-requisites --no-parent https://pornhub.com
+          mv pornhub.com/* ./
+          rm -rf pornhub.com
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git diff --cached --quiet || git commit -m "Auto mirror update $(date -u)"
+          git push
